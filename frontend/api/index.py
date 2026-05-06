@@ -45,11 +45,15 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.VERSION)
 student_data = []
 faculty_data = []
 try:
-    if os.path.exists('data_student.json'):
-        with open('data_student.json', 'r') as f:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    student_json = os.path.join(BASE_DIR, 'data_student.json')
+    faculty_json = os.path.join(BASE_DIR, 'data_faculty.json')
+    
+    if os.path.exists(student_json):
+        with open(student_json, 'r') as f:
             student_data = json.load(f)
-    if os.path.exists('data_faculty.json'):
-        with open('data_faculty.json', 'r') as f:
+    if os.path.exists(faculty_json):
+        with open(faculty_json, 'r') as f:
             faculty_data = json.load(f)
 except Exception as e:
     print(f"Error loading datasets: {e}")
@@ -61,7 +65,9 @@ session_scans = {} # session_id -> list of scan objects {name, roll, time}
 
 def save_student_data():
     try:
-        with open('data_student.json', 'w') as f:
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        student_json = os.path.join(BASE_DIR, 'data_student.json')
+        with open(student_json, 'w') as f:
             json.dump(student_data, f, indent=4)
     except Exception as e:
         print(f"Error saving student data: {e}")
@@ -218,7 +224,8 @@ def get_student_me(email: str):
     for student in student_data:
         if student.get('Institutional Email', '').lower() == email.lower():
             # Check if face is registered locally
-            file_path = os.path.join("face_registry", f"{email.lower()}.jpg")
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(BASE_DIR, "face_registry", f"{email.lower()}.jpg")
             student_with_status = student.copy()
             student_with_status["face_registered"] = os.path.exists(file_path)
             return student_with_status
@@ -288,8 +295,10 @@ def register_face(req: RegisterFaceRequest):
         if not safe_email:
             raise Exception("Invalid email address")
             
-        os.makedirs("face_registry", exist_ok=True)
-        file_path = os.path.join("face_registry", f"{safe_email}.jpg")
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        registry_dir = os.path.join(BASE_DIR, "face_registry")
+        os.makedirs(registry_dir, exist_ok=True)
+        file_path = os.path.join(registry_dir, f"{safe_email}.jpg")
         
         with open(file_path, "wb") as f:
             f.write(img_data)
@@ -302,7 +311,8 @@ def register_face(req: RegisterFaceRequest):
 def verify_face_precheck(req: VerifyFacePrecheckRequest):
     try:
         email = req.student_id.lower()
-        file_path = os.path.join("face_registry", f"{email}.jpg")
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(BASE_DIR, "face_registry", f"{email}.jpg")
         
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Face not registered. Please register your face on the dashboard first.")
