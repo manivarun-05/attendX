@@ -153,7 +153,8 @@ def get_supabase() -> SupabaseClient:
         raise HTTPException(status_code=500, detail="Database credentials missing")
     return SupabaseClient(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
 
-@app.get("/")
+@app.get("/api")
+@app.get("/api/")
 def read_root():
     return {"message": "AttendX API is live and connected to Supabase."}
 
