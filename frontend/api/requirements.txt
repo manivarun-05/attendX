@@ -1,0 +1,9 @@
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-jose[cryptography]>=3.3.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.1
+qrcode>=7.4.2
+redis>=5.0.3
+python-multipart>=0.0.9
+pillow>=10.2.0
