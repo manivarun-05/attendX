@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, Camera, CheckCircle2, User, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { LogIn, UserPlus, Camera, CheckCircle2, User, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import logo from '../assets/logo_refined.png';
 
 export default function Login({ setUser }) {
