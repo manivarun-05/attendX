@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f5f5f5] text-[#1a1a1a] antialiased selection:bg-[#c5f82a];
+    font-family: 'Times New Roman', Times, serif;
+  }
+
+  h1, h2, h3, .serif-font, .mono-font {
+    font-family: 'Times New Roman', Times, serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white border border-[#e5e5e0] rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+  }
+  
+  .input-field {
+    @apply w-full bg-white border border-[#e5e5e0] rounded-xl px-5 py-4 text-[#1a1a1a] placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#c5f82a] focus:border-transparent transition-all;
+  }
+
+  .btn-primary {
+    @apply w-full bg-[#1a1a1a] hover:bg-[#2d2d2d] text-white font-medium py-4 px-6 rounded-full shadow-lg transition-all transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2;
+  }
+
+  .btn-secondary {
+    @apply w-full bg-white hover:bg-[#f9f9f5] text-[#1a1a1a] font-medium border border-[#e5e5e0] py-4 px-6 rounded-full transition-all flex items-center justify-center gap-2;
+  }
+
+  .accent-pill {
+    @apply bg-[#c5f82a] text-[#1a1a1a] px-4 py-1.5 rounded-full text-sm font-medium inline-flex items-center gap-2 shadow-sm;
+  }
+
+  .nav-link {
+    @apply text-sm font-medium text-neutral-500 hover:text-[#1a1a1a] transition-colors;
+  }
+}
