@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",
     "@yudiel/react-qr-scanner": "^2.5.1",
+    "face-api.js": "^0.22.2",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.8.0",
     "qrcode.react": "^4.2.0",

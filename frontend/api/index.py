@@ -289,6 +289,23 @@ def get_faculty_me(email: str):
             return faculty_with_stats
     raise HTTPException(status_code=404, detail="Faculty not found in dataset")
 
+@app.get("/api/student/face_image")
+def get_face_image(email: str):
+    email = email.lower()
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    filename = f"{email}.jpg"
+    tmp_path = os.path.join("/tmp", "face_registry", filename)
+    pkg_path = os.path.join(BASE_DIR, "face_registry", filename)
+    
+    file_path = tmp_path if os.path.exists(tmp_path) else pkg_path
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Face not registered")
+        
+    with open(file_path, "rb") as f:
+        img_data = f.read()
+        return {"face_image_b64": base64.b64encode(img_data).decode("utf-8")}
+
 @app.post("/api/register_face")
 def register_face(req: RegisterFaceRequest):
     try:

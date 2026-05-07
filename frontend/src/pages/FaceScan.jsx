@@ -46,7 +46,31 @@ export default function FaceScan({ userEmail }) {
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        const MODEL_URL = '/models';
+        await Promise.all([
+          window.faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          window.faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          window.faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        setModelsLoaded(true);
+      } catch (err) {
+        console.error("Model load error", err);
+        setErrorMsg("Failed to load biometrics engine.");
+      }
+    }
+    loadModels();
+  }, []);
+
   const captureAndVerify = async () => {
+    if (!modelsLoaded) {
+       setErrorMsg("Biometrics engine still initializing...");
+       return;
+    }
     setStatus('capturing');
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
@@ -55,15 +79,32 @@ export default function FaceScan({ userEmail }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      
       setStatus('verifying');
       try {
-        const res = await fetch('/api/verify/face_precheck', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: userEmail, face_image_b64: dataUrl })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Verification failed');
+        // 1. Fetch registered face
+        const regRes = await fetch(`/api/student/face_image?email=${encodeURIComponent(userEmail)}`);
+        if (!regRes.ok) throw new Error("Face not registered on profile.");
+        const regData = await regRes.json();
+        
+        // 2. Perform comparison
+        const imgRegistered = await window.faceapi.fetchImage(`data:image/jpeg;base64,${regData.face_image_b64}`);
+        const imgCaptured = await window.faceapi.fetchImage(dataUrl);
+        
+        const descRegistered = await window.faceapi.detectSingleFace(imgRegistered, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        const descCaptured = await window.faceapi.detectSingleFace(imgCaptured, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        
+        if (!descRegistered || !descCaptured) {
+           throw new Error("No face detected. Please ensure your face is clearly visible.");
+        }
+        
+        const distance = window.faceapi.euclideanDistance(descRegistered.descriptor, descCaptured.descriptor);
+        const threshold = 0.45; // Strict threshold
+        
+        if (distance > threshold) {
+           throw new Error("Identity mismatch. Access denied.");
+        }
+        
         setStatus('success');
       } catch (err) {
         setStatus('error');
