@@ -46,14 +46,23 @@ student_data = []
 faculty_data = []
 try:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    student_json = os.path.join(BASE_DIR, 'data_student.json')
-    faculty_json = os.path.join(BASE_DIR, 'data_faculty.json')
+    # On Vercel, we can only write to /tmp. 
+    # We check /tmp first (for updates), then fall back to the read-only package dir.
+    tmp_student_json = os.path.join("/tmp", 'data_student.json')
+    tmp_faculty_json = os.path.join("/tmp", 'data_faculty.json')
+    pkg_student_json = os.path.join(BASE_DIR, 'data_student.json')
+    pkg_faculty_json = os.path.join(BASE_DIR, 'data_faculty.json')
     
-    if os.path.exists(student_json):
-        with open(student_json, 'r') as f:
+    # Student data
+    target_student = tmp_student_json if os.path.exists(tmp_student_json) else pkg_student_json
+    if os.path.exists(target_student):
+        with open(target_student, 'r') as f:
             student_data = json.load(f)
-    if os.path.exists(faculty_json):
-        with open(faculty_json, 'r') as f:
+            
+    # Faculty data
+    target_faculty = tmp_faculty_json if os.path.exists(tmp_faculty_json) else pkg_faculty_json
+    if os.path.exists(target_faculty):
+        with open(target_faculty, 'r') as f:
             faculty_data = json.load(f)
 except Exception as e:
     print(f"Error loading datasets: {e}")
@@ -65,8 +74,8 @@ session_scans = {} # session_id -> list of scan objects {name, roll, time}
 
 def save_student_data():
     try:
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        student_json = os.path.join(BASE_DIR, 'data_student.json')
+        # On Vercel, always save to /tmp
+        student_json = os.path.join("/tmp", 'data_student.json')
         with open(student_json, 'w') as f:
             json.dump(student_data, f, indent=4)
     except Exception as e:
@@ -223,11 +232,14 @@ def login(req: LoginRequest):
 def get_student_me(email: str):
     for student in student_data:
         if student.get('Institutional Email', '').lower() == email.lower():
-            # Check if face is registered locally
+            # Check if face is registered (check /tmp first, then package)
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(BASE_DIR, "face_registry", f"{email.lower()}.jpg")
+            filename = f"{email.lower()}.jpg"
+            tmp_path = os.path.join("/tmp", "face_registry", filename)
+            pkg_path = os.path.join(BASE_DIR, "face_registry", filename)
+            
             student_with_status = student.copy()
-            student_with_status["face_registered"] = os.path.exists(file_path)
+            student_with_status["face_registered"] = os.path.exists(tmp_path) or os.path.exists(pkg_path)
             return student_with_status
     raise HTTPException(status_code=404, detail="Student not found in dataset")
 
@@ -295,8 +307,8 @@ def register_face(req: RegisterFaceRequest):
         if not safe_email:
             raise Exception("Invalid email address")
             
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        registry_dir = os.path.join(BASE_DIR, "face_registry")
+        # On Vercel, we MUST use /tmp for writes
+        registry_dir = os.path.join("/tmp", "face_registry")
         os.makedirs(registry_dir, exist_ok=True)
         file_path = os.path.join(registry_dir, f"{safe_email}.jpg")
         
@@ -312,7 +324,11 @@ def verify_face_precheck(req: VerifyFacePrecheckRequest):
     try:
         email = req.student_id.lower()
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(BASE_DIR, "face_registry", f"{email}.jpg")
+        filename = f"{email}.jpg"
+        tmp_path = os.path.join("/tmp", "face_registry", filename)
+        pkg_path = os.path.join(BASE_DIR, "face_registry", filename)
+        
+        file_path = tmp_path if os.path.exists(tmp_path) else pkg_path
         
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Face not registered. Please register your face on the dashboard first.")
